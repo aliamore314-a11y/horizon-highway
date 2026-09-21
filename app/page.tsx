@@ -23,10 +23,8 @@ export default function Home() {
   }, [cars]);
 
   useEffect(() => {
-    // 🟩 KUNCI UTAMA: Tandai bahwa halaman sudah sukses terbuka di browser
     setIsMounted(true);
 
-    // Pastikan server menggunakan alamat resmi yang benar
     const server = new StellarSdk.Horizon.Server('https://horizon.stellar.org');
     
     const stream = server.operations()
@@ -74,13 +72,16 @@ export default function Home() {
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
-      if (canvas.width !== window.innerWidth || canvas.height !== window.innerHeight) {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+      // Safe Client-Only Resize (Hanya dieksekusi di browser, aman bagi server Vercel)
+      if (typeof window !== 'undefined') {
+        if (canvas.width !== window.innerWidth || canvas.height !== window.innerHeight) {
+          canvas.width = window.innerWidth;
+          canvas.height = window.innerHeight;
+        }
       }
 
-      const screenH = canvas.height;
-      const screenW = canvas.width;
+      const screenH = canvas.height || 600;
+      const screenW = canvas.width || 800;
 
       ctx.fillStyle = '#111116';
       ctx.fillRect(0, 0, screenW, screenH);
@@ -144,7 +145,6 @@ export default function Home() {
     };
   }, []);
 
-  // 🛡️ PERISAI ANTICRASH: Jika halaman belum mounted di browser, tahan dengan layar hitam polos
   if (!isMounted) {
     return <div style={{ width: '100vw', height: '100vh', background: '#111116' }} />;
   }
