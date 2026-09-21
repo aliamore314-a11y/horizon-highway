@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Horizon Highway</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body, html { width: 100%; height: 100%; overflow: hidden; background-color: #111116; }
+        canvas { display: block; width: 100%; height: 100%; }
+    </style>
+    <!-- Memuat SDK Stellar secara langsung melalui CDN publik -->
+    <script src="https://cloudflare.com"></script>
+</head>
+<body>
+
+    <canvas id="highwayCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('highwayCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let cars = [];
+
+        // Atur ukuran kanvas sesuai layar browser asli
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Menyambungkan radar langsung ke jaringan siaran Stellar Mainnet
+        try {
+            const server = new StellarSdk.Horizon.Server('https://horizon.stellar.org');
+            server.operations()
+                .cursor('now')
+                .stream({
+                    onmessage: (op) => {
+                        let laneType = 'payment';
+                        let carEmoji = '🚗';
+
+                        if (op.type.includes('payment')) {
+                            laneType = 'payment';
+                            carEmoji = ['🚗', '🚙', '🏎️', '🚕'][Math.floor(Math.random() * 4)];
+                        } else if (op.type.includes('offer') || op.type.includes('liquidity')) {
+                            laneType = 'swap';
+                            carEmoji = '🔄';
+                        } else if (op.type === 'create_account') {
+                            laneType = 'create_account';
+                            carEmoji = '🆕';
+                        } else {
+                            laneType = 'payment';
+                            carEmoji = '⚡';
+                        }
+
+                        const randomOffset = (Math.random() - 0.5) * 15;
+
+                        // Tambahkan objek mobil baru ke daftar antrean
+                        cars.push({
+                            x: -60,
+                            y: randomOffset,
+                            lane: laneType,
+                            speed: 3 + Math.random() * 4,
+                            emoji: carEmoji
+                        });
+
+                        // Batasi kapasitas antrean mobil agar browser tidak lemot
+                        if (cars.length > 50) cars.shift();
+                    },
+                    onerror: (err) => console.error("Radar terputus:", err)
+                });
+        } catch (e) {
+            console.error("Gagal memuat SDK Stellar:", e);
+        }
+
+        // Loop Animasi Jalan Raya
+        function draw() {
+            const screenW = canvas.width;
+            const screenH = canvas.height;
+
+            // Bersihkan kanvas dengan warna dasar aspal
+            ctx.fillStyle = '#111116';
+            ctx.fillRect(0, 0, screenW, screenH);
+
+            // Hitung posisi vertikal lajur
+            const laneHeight = screenH / 4;
+            const yPayment = laneHeight * 1;
+            const ySwap = laneHeight * 2;
+            const yCreate = laneHeight * 3;
+
+            // Gambar Garis Pembatas Putus-putus
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 4;
+            ctx.setLineDash([15, 15]);
+
+            ctx.beginPath();
+            ctx.moveTo(0, yPayment + (laneHeight / 2));
+            ctx.lineTo(screenW, yPayment + (laneHeight / 2));
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(0, ySwap + (laneHeight / 2));
+            ctx.lineTo(screenW, ySwap + (laneHeight / 2));
+            ctx.stroke();
+
+            // Papan Nama Lajur
+            ctx.setLineDash([]);
+            ctx.font = 'bold 13px monospace';
+            ctx.fillStyle = '#64748b';
+            ctx.fillText(' Solana / Stellar 🛣️ PAYMENTS', 30, yPayment - 35);
+            ctx.fillText('🔄 SWAPS / DEX TRADES', 30, ySwap - 35);
+            ctx.fillText('🆕 NEW ACCOUNTS CREATED', 30, yCreate - 35);
+
+            // Update posisi dan gambar mobil
+            cars.forEach((car, index) => {
+                car.x += car.speed;
+                let targetY = yPayment;
+
+                if (car.lane === 'swap') targetY = ySwap;
+                if (car.lane === 'create_account') targetY = yCreate;
+
+                ctx.font = '38px sans-serif';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(car.emoji, car.x, targetY + car.y);
+            });
+
+            // Hapus mobil yang sudah berjalan melewati batas kanan layar
+            cars = cars.filter(car => car.x < screenW + 100);
+
+            requestAnimationFrame(draw);
+        }
+
+        // Jalankan mesin animasi pertama kali
+        requestAnimationFrame(draw);
+    </script>
+</body>
+</html>
