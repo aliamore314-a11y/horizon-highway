@@ -14,6 +14,7 @@ interface Car {
 
 export default function Home() {
   const [cars, setCars] = useState<Car[]>([]);
+  const [isMounted, setIsMounted] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const carsRef = useRef<Car[]>([]);
 
@@ -22,6 +23,10 @@ export default function Home() {
   }, [cars]);
 
   useEffect(() => {
+    // 🟩 KUNCI UTAMA: Tandai bahwa halaman sudah sukses terbuka di browser
+    setIsMounted(true);
+
+    // Pastikan server menggunakan alamat resmi yang benar
     const server = new StellarSdk.Horizon.Server('https://horizon.stellar.org');
     
     const stream = server.operations()
@@ -138,6 +143,11 @@ export default function Home() {
       cancelAnimationFrame(animationFrameId);
     };
   }, []);
+
+  // 🛡️ PERISAI ANTICRASH: Jika halaman belum mounted di browser, tahan dengan layar hitam polos
+  if (!isMounted) {
+    return <div style={{ width: '100vw', height: '100vh', background: '#111116' }} />;
+  }
 
   return (
     <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', margin: 0, padding: 0, background: '#111116' }}>
