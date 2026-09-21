@@ -22,7 +22,7 @@ export default function Home() {
   }, [cars]);
 
   useEffect(() => {
-    const server = new StellarSdk.Horizon.Server('https://stellar.org');
+    const server = new StellarSdk.Horizon.Server('https://horizon.stellar.org');
     
     const stream = server.operations()
       .cursor('now')
